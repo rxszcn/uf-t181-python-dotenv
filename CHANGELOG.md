@@ -10,6 +10,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Add support for Python 3.15.
+- Interpolate unbraced variable references such as `$DOMAIN` in addition to the braced form `${DOMAIN}`. Unbraced names follow the POSIX naming rules (a letter or underscore followed by letters, digits or underscores), both forms can be mixed in the same value, and a `$` that does not start a valid reference is left as-is.
 
 ### Fixed
 

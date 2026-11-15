@@ -10,6 +10,9 @@ _posix_variable: Pattern[str] = re.compile(
             (?P<default>[^\}]*)
         )?
     \}
+    |
+    \$
+    (?P<uname>[A-Za-z_][A-Za-z0-9_]*)
     """,
     re.VERBOSE,
 )
@@ -72,7 +75,9 @@ def parse_variables(value: str) -> Iterator[Atom]:
 
     for match in _posix_variable.finditer(value):
         (start, end) = match.span()
-        name = match["name"]
+        # Braced and unbraced references are matched by the same regex in
+        # alternation; exactly one of the two name groups participates.
+        name = match["name"] if match["name"] is not None else match["uname"]
         default = match["default"]
 
         if start > cursor:

@@ -884,7 +884,7 @@ def test_dotenv_values_file(dotenv_path):
     [
         # Defined in environment, with and without interpolation
         ({"b": "c"}, "a=$b", False, {"a": "$b"}),
-        ({"b": "c"}, "a=$b", True, {"a": "$b"}),
+        ({"b": "c"}, "a=$b", True, {"a": "c"}),
         ({"b": "c"}, "a=${b}", False, {"a": "${b}"}),
         ({"b": "c"}, "a=${b}", True, {"a": "c"}),
         ({"b": "c"}, "a=${b:-d}", False, {"a": "${b:-d}"}),
@@ -910,6 +910,46 @@ def test_dotenv_values_file(dotenv_path):
         ({"b": "c"}, "b=d\na=${b}", True, {"a": "d", "b": "d"}),
         ({}, "a=b\na=c\nd=${a}", True, {"a": "c", "d": "c"}),
         ({}, "a=b\nc=${a}\nd=e\nc=${d}", True, {"a": "b", "c": "e", "d": "e"}),
+        # Unbraced references, mixed with braced ones on the same line
+        ({"b": "c", "d": "e"}, "a=$b/${d}", True, {"a": "c/e"}),
+        ({"b": "c"}, "a=$b${b}$b", True, {"a": "ccc"}),
+        ({"b": "c"}, "a=x${b}y${b}z", True, {"a": "xcycz"}),
+        # Unbraced: defined in file, undefined, with quotes
+        ({}, "b=c\na=$b", True, {"a": "c", "b": "c"}),
+        ({}, "a=$b", True, {"a": ""}),
+        ({"b": "c"}, 'a="$b"', True, {"a": "c"}),
+        ({"b": "c"}, "a='$b'", True, {"a": "c"}),
+        # Unbraced self-referential
+        ({"a": "b"}, "a=$a", True, {"a": "b"}),
+        ({}, "a=$a", True, {"a": ""}),
+        # Unbraced: re-defined and used in file
+        ({"b": "c"}, "b=d\na=$b", True, {"a": "d", "b": "d"}),
+        ({}, "a=b\na=c\nd=$a", True, {"a": "c", "d": "c"}),
+        # Multi-level chains mixing braced and unbraced forms
+        ({}, "a=b\nc=$a\nd=${c}\ne=$d", True, {"a": "b", "c": "b", "d": "b", "e": "b"}),
+        (
+            {},
+            "a=b\nc=${a}\nd=$c\ne=${d}",
+            True,
+            {"a": "b", "c": "b", "d": "b", "e": "b"},
+        ),
+        # A resolved value is not re-scanned for further references
+        ({"b": "$c", "c": "d"}, "a=$b", True, {"a": "$c"}),
+        ({}, "b=$c\nc=d\na=$b", True, {"a": "", "b": "", "c": "d"}),
+        # Literal `$`: not followed by a valid name start stays as-is
+        ({"b": "c"}, "a=$", True, {"a": "$"}),
+        ({"b": "c"}, "a=$1", True, {"a": "$1"}),
+        ({"b": "c"}, "a=$-home", True, {"a": "$-home"}),
+        ({"b": "c"}, "a=$ b", True, {"a": "$ b"}),
+        ({"b": "c"}, "a=100$", True, {"a": "100$"}),
+        # Boundary characters terminate the unbraced name
+        ({"b": "c"}, "a=$b.txt", True, {"a": "c.txt"}),
+        ({"b": "c"}, "a=$b/$b", True, {"a": "c/c"}),
+        ({"b": "c"}, "a=$b:${b}", True, {"a": "c:c"}),
+        ({"b": "c", "b1": "d"}, "a=$b1", True, {"a": "d"}),
+        ({"b_1": "d"}, "a=$b_1", True, {"a": "d"}),
+        ({"_b": "d"}, "a=$_b", True, {"a": "d"}),
+        ({"b": "c"}, "a=$b-x", True, {"a": "c-x"}),
     ],
 )
 def test_dotenv_values_string_io(env, string, interpolate, expected):

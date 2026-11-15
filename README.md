@@ -67,8 +67,12 @@ ADMIN_EMAIL=admin@${DOMAIN}
 ROOT_URL=${DOMAIN}/app
 ```
 
-If you use variables in values, ensure they are surrounded with `{` and `}`,
-like `${DOMAIN}`, as bare variables such as `$DOMAIN` are not expanded.
+Variables in values can be written with or without braces: both `${DOMAIN}`
+and `$DOMAIN` are expanded. An unbraced variable name follows the POSIX
+naming rules — it starts with a letter or underscore, followed by letters,
+digits or underscores — so in `$DOMAIN/app` only `DOMAIN` is expanded. A `$`
+that is not followed by a valid name (or `{`) is left as-is, so values like
+`PRICE=100$` need no escaping.
 
 You will probably want to add `.env` to your `.gitignore`, especially if it
 contains secrets like a password.
@@ -215,6 +219,8 @@ with the empty string.
 ### Variable expansion
 
 python-dotenv can interpolate variables using POSIX variable expansion.
+Both the braced form `${NAME}` (with optional `:-` default) and the unbraced
+form `$NAME` are supported, and can be freely mixed in the same value.
 
 With `load_dotenv(override=True)` or `dotenv_values()`, the value of a variable
 is the first of the values defined in the following list:
